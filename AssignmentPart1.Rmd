@@ -1,0 +1,94 @@
+---
+title: "AssignmentPart1"
+author: "Fei Xu"
+date: "7 November 2018"
+output: html_document
+---
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+LondonData <- read_csv("https://files.datapress.com/london/dataset/ward-profiles-and-atlas/2015-09-24T14:21:24/ward-profiles-excel-version.csv", na = "n/a")
+class(LondonData)
+datatypelist <- data.frame(cbind(lapply(LondonData,class)))
+LondonData <- read_csv("https://files.datapress.com/london/dataset/ward-profiles-and-atlas/2015-09-24T14:21:24/ward-profiles-excel-version.csv")
+LondonData <- edit(LondonData)
+summary(df)
+names(LondonData)
+#select the rows we need
+LondonBoroughs<-LondonData[626:658,]
+#use regular expressions to match patterns in text
+LondonData <- data.frame(LondonData)
+#drop the extra row from dataset
+LondonBoroughs <- LondonData[grep("^E09",LondonData[,3]),]
+head(LondonBoroughs)
+LondonBoroughs <- LondonBoroughs[2:34,]
+#select just a few columns from the dataset
+LondonBoroughs<-LondonBoroughs[,c(1,19,20,21)]
+#rename the column 1 in LondonBoroughs
+names(LondonBoroughs)[1] <- c("Borough Name")
+library(maptools)
+library(RColorBrewer)
+library(classInt)
+library(OpenStreetMap)
+library(sp)
+library(rgeos)
+library(tmap)
+library(tmaptools)
+library(sf)
+library(rgdal)
+library(geojsonio)
+EW <- geojson_read("http://geoportal.statistics.gov.uk/datasets/8edafbe3276d4b56aec60991cbddda50_2.geojson", what = "sp")
+LondonMap <- EW[grep("^E09",EW@data$lad15cd),]
+qtm(LondonMap)
+##read the shapefile into a simple features object
+BoroughMapSF <- read_shape("C:/Users/pctx/Documents/W3/england_lad_2011.shp", as.sf = TRUE)
+BoroughMapSP <- LondonMap
+qtm(BoroughMapSF)
+qtm(BoroughMapSP)
+library(methods)
+class(BoroughMapSF)
+class(BoroughMapSP)
+#convert between simple features objects and spatialPolygonsDataFrames 
+newSF <- st_as_sf(BoroughMapSP)
+newSP <- as(newSF, "Spatial")
+BoroughMapSP <- as(BoroughMapSF, "Spatial")
+#join the data to the @data slot in the SP data frame
+BoroughMapSP@data <- data.frame(BoroughMapSP@data,LondonData[match(BoroughMapSP@data[,"code"],LondonData[,"New.code"]),])
+BoroughDataMap <- append_data(BoroughMapSF,LondonData, key.shp = "code", key.data = "New.code", ignore.duplicates = TRUE)
+BoroughDataMap2 <- BoroughMapSF %>% left_join(LondonData, by = c("code" = "New.code"))
+install.packages("shinyjs")          
+library(shinyjs)
+tmap_mode("view")
+tm_shape(BoroughDataMap) +
+tm_polygons("Number.of.Household.spaces...2011",
+style="jenks",
+palette="PuRd",
+midpoint=NA,
+ title="Household space")
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+![LondonBoroughData](N:\GIS\WK4\LondonBoroughData.jpg)
+
+## Introduction
+The maps made by Arcgis and  R studio have the same content. They shows the distribution of the mumbers of household space in London boroughs. Users can easily judge the number of household sppace in different boroughs by discerning the depth of colors.
+
+## GUI VS CLI
+In general, GUI is indeed easier to use than CLI, but CLI is more efficient than GUI. That is the design goal of both ways. 
+GUI use a large number of graphical elements, which is more artistic and humanised. Users create maps by clicking buttons, selecting radio boxes and so on. Compared with the text, beautiful graphics greatly enhance the usability of the interface.  This also reduce the difficulty of starters learning.
+
+CLI usually works in plain text in order to improve capability. User's intention is transmitted to the system by commands and parameters. The results can completely achieve the functions that users want and can be easily spread on the internet. However, it is so hard for users to remember too many commands and parameter, which could make time wasted in inquiring notes.
+
+## Workflows
+The map created by Arcgis(GUI based software): Before using Arcmap, ArcCatalog has been used to create geodatabase.Firstly,the boundary data of London borough should be downloaded. Then, data of numbers of Household spaces was matched with data before by using symbology tools. Finally, the legend, map sources, title and north arrow were used.
+
+The map created by R studio(CLI based software):Compared with Arcgis,R stuodio saved a clear completion process in the code. Firstly, the data were collected. Then, they were marched. Finally, map was finished. Functions from different packages provide users with great help and makes the process more efficient.
+
+##Conclusion
+GUI is relatively easier to be used and CLI is relatively more efficient.To complete tasks better, users need to flexibly use characteristics of both ways.
